@@ -48,8 +48,15 @@ type Transformation = Point -> Point
     > inside (1, 1) (== (0, 0))
     False
 -}
+
+{-
+    inside point region = region point, so aplying the function region on the point
+    using flip ($) inverts the order of arguments for the operator ($)
+-}
 inside :: Point -> Region -> Bool
-inside = undefined
+-- inside point region = region point
+inside = flip ($)
+
 
 {-
     *** TODO ***
@@ -74,8 +81,13 @@ inside = undefined
     > inside (0, 1) $ fromPoints [(0, 0), (1, 1)]  -- echivalentă cu anterioara
     False
 -}
+
+{-
+    fromPoints ps p checks if p is an element of list ps
+-}
 fromPoints :: [Point] -> Region
-fromPoints = undefined
+-- fromPoints ps = \p -> p `elem` ps
+fromPoints = flip elem
 
 {-
     *** TODO ***
@@ -99,8 +111,12 @@ fromPoints = undefined
     > rectangle 2 2 (2, 2)  
     False
 -}
+
+{-
+    check if the coords of a point are within the rectangle
+-}
 rectangle :: Float -> Float -> Region
-rectangle width height = undefined
+rectangle width height (x, y) = abs x <= width / 2 && abs y <= height / 2
 
 {-
     *** TODO ***
@@ -122,8 +138,13 @@ rectangle width height = undefined
     > circle 1 (1, 1)
     False
 -}
+
+{-
+    check if a point is within the circle with the center in (0, 0) and the given radius
+    check using circle equation
+-}
 circle :: Float -> Region
-circle radius = undefined
+circle radius (x, y) = x ** 2 + y ** 2 <= radius ** 2
 
 {-
     *** TODO ***
@@ -173,7 +194,10 @@ circle radius = undefined
     ..*..
 -}
 plot :: Int -> Int -> Region -> String
-plot width height region = undefined
+plot width height region =  intercalate "\n" [
+    [if region (fromIntegral x, fromIntegral y) then '*' else '.'
+    | x <- [-width..width]] | y <- [height, height-1.. -height]
+    ]
 
 {-
     Utilizați această funcție pentru vizualizarea diagramelor,
@@ -206,10 +230,10 @@ printPlot width height region = putStrLn $ plot width height region
     5.0
 -}
 promoteUnary :: (a -> b) -> Pointed a -> Pointed b
-promoteUnary = undefined
+promoteUnary f g = f . g
 
 promoteBinary :: (a -> b -> c) -> Pointed a -> Pointed b -> Pointed c
-promoteBinary f pointed1 pointed2 point = undefined
+promoteBinary f pointed1 pointed2 point = f (pointed1 point) (pointed2 point)
 
 {-
     *** TODO ***
@@ -244,13 +268,13 @@ promoteBinary f pointed1 pointed2 point = undefined
     .....
 -}
 complement :: Region -> Region
-complement = undefined
+complement = promoteUnary not
 
 union :: Region -> Region -> Region
-union = undefined
+union = promoteBinary (||)
 
 intersection :: Region -> Region -> Region
-intersection = undefined
+intersection = promoteBinary (&&)
 
 {-
     *** TODO ***
@@ -270,7 +294,7 @@ intersection = undefined
     (0.0,0.0)
 -}
 translation :: Float -> Float -> Transformation
-translation tx ty = undefined
+translation tx ty = \(x, y) -> (x - tx, y - ty)
 
 {-
     *** TODO ***
@@ -285,7 +309,7 @@ translation tx ty = undefined
     (1.0,1.0)
 -}
 scaling :: Float -> Transformation
-scaling factor = undefined
+scaling factor = \(x, y) -> (x / factor, y / factor)
 
 {-
     *** TODO ***
@@ -312,7 +336,7 @@ scaling factor = undefined
     .....
 -}
 applyTransformation :: Transformation -> Region -> Region
-applyTransformation = undefined
+applyTransformation transformation region = region . transformation
 
 {-
     *** TODO ***
@@ -336,11 +360,17 @@ applyTransformation = undefined
 
     Echivalent cu:
 
-    > printPlot 2 2 $ applyTransformation (translation 1 0) $
-        applyTransformation (scaling 0.5) (circle 2)
+    > printPlot 2 2 $ applyTransformation (translation 1 0) $ applyTransformation (scaling 0.5) (circle 2)
 -}
+
 combineTransformations :: [Transformation] -> Transformation
-combineTransformations = undefined
+combineTransformations = foldl (flip (.)) id
+
+-- Apply flip (.) t1 id → results in t1 . id (simplifies to t1)
+-- Apply flip (.) t2 t1 → results in t2 . t1
+-- Apply flip (.) t3 (t2 . t1) → results in t3 . (t2 . t1)
+
+
 
 {-
     *** TODO ***
@@ -370,6 +400,15 @@ combineTransformations = undefined
     ...............................
 
     Răspuns: ...............
+
+    Evaluarea lenesa se foloseste pentru a optimiza felul in care sunt evaluate
+    expresiile prin intarzierea acestora pana cand este necesar rezultatul lor.
+    In cazul de fata este un beneficiu pentru ca se construieste ceva complex
+    cu union-ul din circles. Cand se verifica daca punctul apartine unuia dintre
+    cercuri, daca apartine primului, nu mai este necesar sa se verifice si la urm.
+    De exemplu, pt (6, 0) evaluarea lenesa va verifica doar al doilea cerc, nu si
+    celelalte cerucri, daca pct se afla in al doiela.
+
 -}
 circles :: Int -> Region
 circles n
@@ -385,6 +424,13 @@ circles n
     când se verifică apartenența unui punct care NU aparține regiunii.
 
     Răspuns: ...............
+
+    Functia reprezinta o uniune de cercuri, fiecare de raza 2, translatata progresiv
+    cu cate 6 unitati spre dreapta pe axa Ox.
+    Cand se verifica daca un punct apartine unui cerc, dar acesta nu apartine de fapt
+    se va evalua la infinit functia si vom avea un loop infinit pana la un eventual
+    stack overflow.
+
 -}
 infiniteCircles :: Region
 infiniteCircles = union (circle 2)
@@ -423,8 +469,36 @@ infiniteCircles = union (circle 2)
     realizează exact această combinație, map + foldl. O puteți utiliza pentru
     a extinde implementarea de mai sus.
 -}
+
+-- Define the BFS function with type signature.
+-- It takes a starting node and a function to expand nodes, returning a list of nodes and their distances from the start.
 bfs :: (Ord a) => a -> (a -> [a]) -> [(a, Int)]
-bfs start expand = undefined
+bfs start expand = bfs' S.empty [(start, 0)]
+  where
+    -- The helper function bfs' performs the actual BFS.
+    -- It uses a set to track visited nodes and a list as a queue to manage the nodes to be processed.
+    bfs' visited [] = []
+    -- If the queue is empty, return an empty list indicating completion.
+    bfs' visited ((s, dist):rest)
+    -- Process each node `s` with its distance `dist` from the start, along with the rest of the queue.
+      | s `S.member` visited = bfs' visited rest
+      -- If the node has already been visited, continue with the rest of the queue.
+      | otherwise = (s, dist) : bfs' newVisited newQueue
+      -- If the node has not been visited, include it in the result and process its neighbors.
+      where
+        -- Retrieve all neighbors of the current node using the expand function.
+        neighbors = expand s
+        -- Filter out neighbors that have already been visited.
+        filteredNeighbors = filter (`S.notMember` visited) neighbors
+        -- Add the current node to the set of visited nodes.
+        newVisited = S.insert s visited
+
+        -- Prepare the new queue by appending the filtered neighbors to the rest of the queue.
+        -- Each neighbor is assigned a distance of `dist + 1`.
+
+        -- newQueue = rest ++ zip filteredNeighbors (repeat (dist + 1))
+        newQueue = rest ++ map (, dist + 1) filteredNeighbors
+        -- The map (, dist + 1) applies to each neighbor, pairing it with its new distance, creating new entries for the queue.
 
 {-
     *** TODO BONUS ***
@@ -454,5 +528,24 @@ bfs start expand = undefined
     ....................*.....*.....*........
     .........................................
 -}
+-- Define movements to north, east, south, and west
+-- list of lambda functions where each function represents a movement in one of the four cardinal directions
+moves :: [Point -> Point]
+moves = [\(x, y) -> (x, y+1), \(x, y) -> (x+1, y), \(x, y) -> (x, y-1), \(x, y) -> (x-1, y)]
+
+-- Helper function to filter valid moves
+-- takes a Region (a function that specifies which points are blocked or restricted) and a Point,
+-- and returns True if the point is not within the region
+validMove :: Region -> Point -> Bool
+validMove region p = not (region p)
+
+-- Expand function for BFS
+-- generates all valid next positions from a given point by applying each movement in moves to the point and
+-- then filtering out any resulting points that fall within the restricted region
+expand :: Region -> Point -> [Point]
+expand region point = filter (validMove region) (map ($ point) moves)
+
+-- performs the BFS, starting from a given start point and using the custom expand function. It uses the BFS
+--  that expects a start point and a function to generate the next possible points
 regionAvoidingBfs :: Point -> Region -> [(Point, Int)]
-regionAvoidingBfs start region = undefined
+regionAvoidingBfs start region = bfs start (expand region)
