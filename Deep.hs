@@ -89,8 +89,6 @@ applyTransformation (Combine []) region = region
 applyTransformation transformation region = Transform transformation region
 
 {-
-    *** TODO ***
-
     Implementați funcția toTransformation, care constituie o interpretare
     a AST-ului unei transformări (TransformationAST), în vederea recuperării
     reprezentării concrete din etapa 1, sub forma unei funcții cu tipul
@@ -103,18 +101,47 @@ applyTransformation transformation region = Transform transformation region
     prefixate, e.g. S.translation, sunt cele din modulul Shallow.
 -}
 toTransformation :: TransformationAST -> Transformation
-toTransformation transformation = undefined
+toTransformation (Translation dx dy) = S.translation dx dy
+toTransformation (Scaling factor) = S.scaling factor
+toTransformation (Combine transformations) = combineTransformations transformations
+  where
+    combineTransformations = foldl (flip (.)) id . map toTransformation
 
 {-
-    *** TODO ***
+foldl (flip (.)) id: This approach starts applying transformations from the beginning of the
+list and composes them in the sequence they appear. Using flip (.) changes the order of function
+composition to match the expected order in which transformations should be applied.
+map toTransformation: This converts each TransformationAST in the list into a corresponding
+Transformation function before combining them.
+-}
 
+{-
     Implementați funcția toRegion, care constituie o interpretare a AST-ului
     unei regiuni (RegionAST), în vederea recuperării reprezentării concrete
     din etapa 1, sub forma unei funcții caracteristice cu tipul
     Region = (Point -> Bool).
 -}
 toRegion :: RegionAST -> Region
-toRegion region = undefined
+toRegion (FromPoints points) = S.fromPoints points
+toRegion (Rectangle width height) = S.rectangle width height
+toRegion (Circle radius) = S.circle radius
+toRegion (Complement region) = S.complement (toRegion region)
+toRegion (Union region1 region2) = S.union (toRegion region1) (toRegion region2)
+toRegion (Intersection region1 region2) = S.intersection (toRegion region1) (toRegion region2)
+toRegion (Transform transformation region) = S.applyTransformation (toTransformation transformation) (toRegion region)
+
+{-
+    FromPoints, Rectangle, Circle: For simple geometric shapes and points lists, the function directly uses corresponding 
+    shallow representations (S.fromPoints, S.rectangle, S.circle).
+    
+    Complement, Union, Intersection: These constructors handle logical operations on regions. They use the corresponding
+    shallow functions (S.complement, S.union, S.intersection), applied recursively to the subregions. This ensures that
+    the entire AST structure is converted properly.
+    
+    Transform: This constructor applies a transformation to a region. It converts both the transformation and the region
+    using toTransformation and toRegion, respectively, then applies the transformation to the region using S.applyTransformation.
+-}
+
 
 {-
     Varianta actualizată a a funcției inside.
@@ -123,8 +150,6 @@ inside :: Point -> RegionAST -> Bool
 inside = flip toRegion
 
 {-
-    *** TODO ***
-
     Implementați funcția decomposeTransformation, care descompune o transformare
     oricât de complexă într-o listă de transformări elementare (translații
     și scalări), conservând bineînțeles ordinea acestora.
@@ -152,11 +177,12 @@ inside = flip toRegion
     [Translation 1.0 2.0,Translation 3.0 4.0,Scaling 2.0,Scaling 3.0]
 -}
 decomposeTransformation :: TransformationAST -> [TransformationAST]
-decomposeTransformation transformation = undefined
+decomposeTransformation (Translation dx dy) = [Translation dx dy]
+decomposeTransformation (Scaling factor) = [Scaling factor]
+decomposeTransformation (Combine transformations) =
+    concatMap decomposeTransformation transformations
 
 {-
-    *** TODO ***
-
     Implementați funcția fuseTransformations, care alipește transformările
     adiacente de același fel (translații cu translații și scalări cu scalări)
     dintr-o listă de transformări elementare (translații și scalări),
@@ -177,7 +203,23 @@ decomposeTransformation transformation = undefined
     [Translation 4.0 6.0,Scaling 6.0,Translation 5.0 6.0]
 -}
 fuseTransformations :: [TransformationAST] -> [TransformationAST]
-fuseTransformations = undefined
+fuseTransformations = foldr fuse []
+  where
+    fuse :: TransformationAST -> [TransformationAST] -> [TransformationAST]
+    fuse t [] = [t]  -- If the list is empty, start with the current transformation
+    fuse t (x:xs)
+      | canFuse t x = (fuseSingle t x) : xs  -- If they can fuse, fuse them and continue
+      | otherwise = t : x : xs  -- Otherwise, add the current transformation to the result list
+
+    canFuse :: TransformationAST -> TransformationAST -> Bool
+    canFuse (Translation _ _) (Translation _ _) = True
+    canFuse (Scaling _) (Scaling _) = True
+    canFuse _ _ = False
+
+    fuseSingle :: TransformationAST -> TransformationAST -> TransformationAST
+    fuseSingle (Translation dx1 dy1) (Translation dx2 dy2) = Translation (dx1 + dx2) (dy1 + dy2)
+    fuseSingle (Scaling s1) (Scaling s2) = Scaling (s1 * s2)
+    fuseSingle x _ = x  -- Default case should not be hit due to prior checks
 
 {-
     *** TODO ***
