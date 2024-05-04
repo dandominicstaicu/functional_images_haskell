@@ -30,8 +30,6 @@ type Region = Pointed Bool
 type Transformation = Point -> Point
 
 {-
-    *** TODO ***
-
     Implementați funcția inside, care verifică dacă un punct aparține unei
     regiuni (ea însăși reprezentată ca o funcție caracteristică).
 
@@ -59,8 +57,6 @@ inside = flip ($)
 
 
 {-
-    *** TODO ***
-
     Implementați funcția fromPoints, care construiește o regiune pe baza unei
     liste de puncte.
 
@@ -90,8 +86,6 @@ fromPoints :: [Point] -> Region
 fromPoints = flip elem
 
 {-
-    *** TODO ***
-
     Implementați funcția rectangle, care generează o regiune aferentă
     unui dreptunghi, cu lățime și înălțime date, simetric față de originea
     (0, 0). De exemplu, un dreptunghi cu lățimea 2 și înălțimea 2 va avea
@@ -119,8 +113,6 @@ rectangle :: Float -> Float -> Region
 rectangle width height (x, y) = abs x <= width / 2 && abs y <= height / 2
 
 {-
-    *** TODO ***
-
     Implementați funcția circle, care generează o regiune aferentă unui cerc,
     cu rază dată și centrul în originea (0, 0).
 
@@ -147,8 +139,6 @@ circle :: Float -> Region
 circle radius (x, y) = x ** 2 + y ** 2 <= radius ** 2
 
 {-
-    *** TODO ***
-
     Implementați funcția plot, care generează diagrama unei regiuni,
     pe o suprafață de desenare de dimensiuni fixate. Punctul (0, 0)
     se află în centrul suprafeței de desenare, iar lățimea și înălțimea
@@ -207,8 +197,6 @@ printPlot :: Int -> Int -> Region -> IO ()
 printPlot width height region = putStrLn $ plot width height region
 
 {-
-    *** TODO ***
-
     Implementați funcțiile promoteUnary și promoteBinary, care primesc
     o funcție unară (a -> b), respectiv binară (a -> b -> c), și o promovează
     pentru a opera pe rezultatul(-ele) unor funcții (Point -> a) etc.
@@ -236,8 +224,6 @@ promoteBinary :: (a -> b -> c) -> Pointed a -> Pointed b -> Pointed c
 promoteBinary f pointed1 pointed2 point = f (pointed1 point) (pointed2 point)
 
 {-
-    *** TODO ***
-
     Implementați funcțiile complement, union și intersection, care determină
     complementul, reuniunea, respectiv intersecția a două regiuni.
 
@@ -277,8 +263,6 @@ intersection :: Region -> Region -> Region
 intersection = promoteBinary (&&)
 
 {-
-    *** TODO ***
-
     Implementați funcția translation, care generează o translație
     cu deplasamente primite ca parametri. Deși contraintuitiv, deplasamentele
     trebuie scăzute, nu adunate, din coordonatele punctului transformat.
@@ -297,8 +281,6 @@ translation :: Float -> Float -> Transformation
 translation tx ty = \(x, y) -> (x - tx, y - ty)
 
 {-
-    *** TODO ***
-
     Implementați funcția scaling, care generează o scalare cu un factor primit
     ca parametru. Similar cu observația de la funcția translate, factorul
     contribuie prin împărțire, nu prin înmulțire.
@@ -312,8 +294,6 @@ scaling :: Float -> Transformation
 scaling factor = \(x, y) -> (x / factor, y / factor)
 
 {-
-    *** TODO ***
-
     Implementați funcția applyTransformation, care aplică o transformare asupra
     unei regiuni.
 
@@ -339,8 +319,6 @@ applyTransformation :: Transformation -> Region -> Region
 applyTransformation transformation region = region . transformation
 
 {-
-    *** TODO ***
-
     Implementați funcția combineTransformations, care combină transformările
     dintr-o listă într-o singură transformare. Ordinea de aplicare
     a transformărilor este dată de ordinea lor în listă.
@@ -373,8 +351,6 @@ combineTransformations = foldl (flip (.)) id
 
 
 {-
-    *** TODO ***
-
     Funcția circles de mai jos generează o regiune formată din n cercuri de rază
     2, translatate succesiv cu 6 unități pe orizontală.
 
@@ -418,8 +394,6 @@ circles n
                                              (circles (n - 1)))
 
 {-
-    *** TODO ***
-
     Explicați la prezentare cum se comportă reuniunea infinită de mai jos
     când se verifică apartenența unui punct care NU aparține regiunii.
 
@@ -438,7 +412,7 @@ infiniteCircles = union (circle 2)
                                              infiniteCircles)
 
 {-
-    *** TODO BONUS ***
+    *** BONUS ***
 
     Implementați funcția bfs, care realizează o căutare în lățime într-un spațiu
     oarecare de stări de tipul a, pornind de la o stare inițială start și de la
@@ -501,7 +475,7 @@ bfs start expand = bfs' S.empty [(start, 0)]
         -- The map (, dist + 1) applies to each neighbor, pairing it with its new distance, creating new entries for the queue.
 
 {-
-    *** TODO BONUS ***
+    *** BONUS ***
 
     Implementați funcția regionAvoidingBfs, care determină distanța minimă
     de la orice punct la un nod de start, obținută prin deplasări către nord,
