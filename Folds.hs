@@ -3,6 +3,8 @@ module Folds where
 
 import Shallow (Point, Region, Transformation)
 import qualified Shallow as S
+import Data.List (intercalate)  -- Explicit import of intercalate
+
 
 {-
     Contructor de tip care surprinde regiunile elementare și modalitățile
@@ -115,8 +117,6 @@ applyTransformation (T (Combine [])) region = region
 applyTransformation transformation region = R $ Transform transformation region
 
 {-
-    *** TODO ***
-
     Instanțiați clasa Show cu tipul TransformationAST, pentru a reprezenta
     transformările sub formă de șir de caractere, astfel:
 
@@ -140,11 +140,12 @@ applyTransformation transformation region = R $ Transform transformation region
     [+(1.0,2.0),*<3.0>,[*<4.0>,+(5.0,6.0)]]
 -}
 instance Show TransformationAST where
-    show (T transformation) = undefined
+    show (T transformation) = case transformation of
+        Translation tx ty -> "+(" ++ show tx ++ "," ++ show ty ++ ")"
+        Scaling factor    -> "*<" ++ show factor ++ ">"
+        Combine ts        -> "[" ++ intercalate "," (map show ts) ++ "]"
 
 {-
-    *** TODO ***
-
     Instanțiați clasa Show cu tipul RegionAST, pentru a reprezenta regiunile
     sub formă de șir de caractere, astfel:
 
@@ -182,11 +183,28 @@ instance Show TransformationAST where
         Rectangle 4.0 5.0
 -}
 instance Show RegionAST where
-    show = undefined
+    show = showRegion 0 where
+        -- Helper function for showing regions with proper indentation
+        showRegion :: Int -> RegionAST -> String
+        showRegion level (R shape) = case shape of
+            FromPoints points -> replicate (2 * level) ' ' ++ "FromPoints " ++ show points
+            Rectangle w h -> replicate (2 * level) ' ' ++ "Rectangle " ++ show w ++ " " ++ show h
+            Circle r -> replicate (2 * level) ' ' ++ "Circle " ++ show r
+            Complement region -> 
+                replicate (2 * level) ' ' ++ "~\n" ++ showRegion (level + 1) region
+            Union region1 region2 -> 
+                replicate (2 * level) ' ' ++ "+\n" ++
+                showRegion (level + 1) region1 ++ "\n" ++
+                showRegion (level + 1) region2
+            Intersection region1 region2 -> 
+                replicate (2 * level) ' ' ++ "*\n" ++
+                showRegion (level + 1) region1 ++ "\n" ++
+                showRegion (level + 1) region2
+            Transform trans region -> 
+                replicate (2 * level) ' ' ++ show trans ++ "\n" ++
+                showRegion (level + 1) region
 
 {-
-    *** TODO ***
-
     Instanțiați clasa Num și implementați doar funcțiile de mai jos, pentru
     a putea privi tipul RegionAST ca pe un tip numeric, astfel:
 
@@ -243,19 +261,20 @@ instance Show RegionAST where
         Rectangle 4.0 5.0
 -}
 instance Num RegionAST where
-    fromInteger n = undefined
+    fromInteger n = fromPoints [(fromIntegral n, fromIntegral n)]
     
-    negate = undefined
+    negate = complement
 
-    (+) = undefined
+    (+) = union
 
-    (*) = undefined
+    (*) = intersection
 
     {-
         Diferența regiunilor trebuie implementată exclusiv prin alți operatori
         aritmetici pe regiuni, definiți în instanța curentă.
     -}
-    region1 - region2 = undefined
+    -- Difference is the intersection of the first region and the complement of the second
+    region1 - region2 = region1 * negate region2
 
 {-
     *** TODO ***
@@ -288,7 +307,10 @@ instance Num RegionAST where
 -}
 instance Functor TransformationShape where
     -- fmap :: (a -> b) -> TransformationShape a -> TransformationShape b
-    fmap f transformation = undefined
+    -- fmap f transformation = undefined
+    fmap f (Translation tx ty) = Translation tx ty  -- No application of f, as fields are not of type a
+    fmap f (Scaling factor)    = Scaling factor      -- No application of f, as fields are not of type a
+    fmap f (Combine as)        = Combine (map f as)  -- Apply f to each element in the list
 
 {-
     *** TODO ***
