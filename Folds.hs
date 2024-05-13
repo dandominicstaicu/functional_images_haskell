@@ -277,8 +277,6 @@ instance Num RegionAST where
     region1 - region2 = region1 * negate region2
 
 {-
-    *** TODO ***
-
     Instanțiați clasa Functor cu constructorul TransformationShape. Funcția f,
     cu tipul (a -> b), pe care fmap o ia ca parametru, poate fi aplicată numai
     unde există un câmp de tipul a. Celelalte valori își păstrează forma
@@ -337,7 +335,13 @@ instance Functor TransformationShape where
 -}
 instance Functor RegionShape where
     -- fmap :: (a -> b) -> RegionShape a -> RegionShape b
-    fmap f region = undefined
+    fmap f (FromPoints points) = FromPoints points  -- No application of f, as points are not of type a
+    fmap f (Rectangle width height) = Rectangle width height  -- No application of f, as width and height are not of type a
+    fmap f (Circle radius) = Circle radius  -- No application of f, as radius is not of type a
+    fmap f (Complement region) = Complement (f region)  -- Apply f to the contained region
+    fmap f (Union region1 region2) = Union (f region1) (f region2)  -- Apply f to both regions
+    fmap f (Intersection region1 region2) = Intersection (f region1) (f region2)  -- Apply f to both regions
+    fmap f (Transform transformation region) = Transform transformation (f region)  -- Apply f to the region
 
 {-
     Tipul (TransformationCombiner a) include funcții care pot combina câmpurile
@@ -354,8 +358,6 @@ type TransformationCombiner a = TransformationShape a -> a
 type RegionCombiner a = RegionShape a -> a
 
 {-
-    *** TODO ***
-
     Implementați funcționalele foldTransformationAST și foldRegionAST, care au
     definiții aproape identice, pentru a putea reduce (fold) AST-uri de tipul
     TransformationAST, respectiv RegionAST, la o singură valoare de tipul a,
@@ -398,10 +400,10 @@ type RegionCombiner a = RegionShape a -> a
     intermediare într-un nou șir.
 -}
 foldTransformationAST :: TransformationCombiner a -> TransformationAST -> a
-foldTransformationAST f (T transformation) = undefined
+foldTransformationAST f (T transformation) = f (fmap (foldTransformationAST f) transformation)
 
 foldRegionAST :: RegionCombiner a -> RegionAST -> a
-foldRegionAST f (R region) = undefined
+foldRegionAST f (R region) = f (fmap (foldRegionAST f) region)
 
 {-
     *** TODO ***
@@ -424,7 +426,9 @@ toTransformation :: TransformationAST -> Transformation
 toTransformation = foldTransformationAST combiner
   where
     combiner :: TransformationCombiner Transformation
-    combiner transformation = undefined
+    combiner (Translation tx ty) = S.translation tx ty
+    combiner (Scaling factor) = S.scaling factor
+    combiner (Combine transformations) = foldr (.) id transformations
 
 {-
     *** TODO ***
