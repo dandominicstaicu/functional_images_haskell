@@ -140,9 +140,13 @@ applyTransformation transformation region = R $ Transform transformation region
     [+(1.0,2.0),*<3.0>,[*<4.0>,+(5.0,6.0)]]
 -}
 instance Show TransformationAST where
+    -- Define the show function for the TransformationAST type
     show (T transformation) = case transformation of
+        -- For a translation, display "+(tx,ty)"
         Translation tx ty -> "+(" ++ show tx ++ "," ++ show ty ++ ")"
+        -- For a scaling, display "*<factor>"
         Scaling factor    -> "*<" ++ show factor ++ ">"
+        -- For a combination of transformations, display them as a Haskell list
         Combine ts        -> "[" ++ intercalate "," (map show ts) ++ "]"
 
 {-
@@ -187,19 +191,24 @@ instance Show RegionAST where
         -- Helper function for showing regions with proper indentation
         showRegion :: Int -> RegionAST -> String
         showRegion level (R shape) = case shape of
+            -- For FromPoints, Rectangle, and Circle, directly show the shape with the proper indentation
             FromPoints points -> replicate (2 * level) ' ' ++ "FromPoints " ++ show points
             Rectangle w h -> replicate (2 * level) ' ' ++ "Rectangle " ++ show w ++ " " ++ show h
             Circle r -> replicate (2 * level) ' ' ++ "Circle " ++ show r
+            -- For Complement, show the '~' character and then the indented region
             Complement region -> 
                 replicate (2 * level) ' ' ++ "~\n" ++ showRegion (level + 1) region
+            -- For Union, show the '+' character and then the two indented regions
             Union region1 region2 -> 
                 replicate (2 * level) ' ' ++ "+\n" ++
                 showRegion (level + 1) region1 ++ "\n" ++
                 showRegion (level + 1) region2
+            -- For Intersection, show the '*' character and then the two indented regions
             Intersection region1 region2 -> 
                 replicate (2 * level) ' ' ++ "*\n" ++
                 showRegion (level + 1) region1 ++ "\n" ++
                 showRegion (level + 1) region2
+            -- For Transform, show the transformation and then the indented region
             Transform trans region -> 
                 replicate (2 * level) ' ' ++ show trans ++ "\n" ++
                 showRegion (level + 1) region
@@ -261,12 +270,16 @@ instance Show RegionAST where
         Rectangle 4.0 5.0
 -}
 instance Num RegionAST where
+    -- Convert an integer to a RegionAST that includes only the point (n, n)
     fromInteger n = fromPoints [(fromIntegral n, fromIntegral n)]
     
+    -- Negate a region, which corresponds to the complement of the region
     negate = complement
 
+    -- Sum of two regions corresponds to their union
     (+) = union
 
+    -- Product of two regions corresponds to their intersection
     (*) = intersection
 
     {-
@@ -311,8 +324,6 @@ instance Functor TransformationShape where
     fmap f (Combine as)        = Combine (map f as)  -- Apply f to each element in the list
 
 {-
-    *** TODO ***
-
     Instanțiați clasa Functor cu constructorul RegionShape. Funcția f,
     cu tipul (a -> b), pe care fmap o ia ca parametru, poate fi aplicată numai
     unde există un câmp de tipul a. Celelalte valori își păstrează forma
@@ -399,15 +410,16 @@ type RegionCombiner a = RegionShape a -> a
     la (labels :: [String]), și singura preocupare este de a combina șirurile
     intermediare într-un nou șir.
 -}
+-- The combiner function f is then applied to the result of the fmap, combining the reduced values into a single value of type a
+-- fmap applies foldTransformationAST f to each field of the TransformationShape contained within transformation
 foldTransformationAST :: TransformationCombiner a -> TransformationAST -> a
 foldTransformationAST f (T transformation) = f (fmap (foldTransformationAST f) transformation)
 
+-- fmap applies foldRegionAST f to each field of the RegionShape contained within region
 foldRegionAST :: RegionCombiner a -> RegionAST -> a
 foldRegionAST f (R region) = f (fmap (foldRegionAST f) region)
 
 {-
-    *** TODO ***
-
     Reimplementați funcția toTransformation din etapa 2, ca o reducere a unui
     TransformationAST. La fel ca în etapa 2, puteți invoca funcțiile din etapa 1
     prefixându-le cu „S.”.
@@ -425,14 +437,16 @@ foldRegionAST f (R region) = f (fmap (foldRegionAST f) region)
 toTransformation :: TransformationAST -> Transformation
 toTransformation = foldTransformationAST combiner
   where
+    -- Define the combiner function for TransformationShape
     combiner :: TransformationCombiner Transformation
+    -- Combiner for Translation: uses the S.translation function to create a translation transformation
     combiner (Translation tx ty) = S.translation tx ty
+    -- Combiner for Scaling: uses the S.scaling function to create a scaling transformation
     combiner (Scaling factor) = S.scaling factor
-    combiner (Combine transformations) = foldr (.) id transformations
+    -- Combiner for Combine: uses the S.combineTransformations function to combine multiple transformations
+    combiner (Combine transformations) = S.combineTransformations transformations
 
 {-
-    *** TODO ***
-
     Implementați funcția basicTransformationCount, ca o reducere a unui
     TransformationAST, care numără transformările elementare (translații
     și scalări) din cadrul unei alte transformări.
@@ -463,11 +477,11 @@ basicTransformationCount :: TransformationAST -> Int
 basicTransformationCount = foldTransformationAST combiner
   where
     combiner :: TransformationCombiner Int
-    combiner transformation = undefined
+    combiner (Translation _ _) = 1
+    combiner (Scaling _) = 1
+    combiner (Combine counts) = sum counts
 
 {-
-    *** TODO ***
-
     Implementați funcția basicEntityCount, ca o reducere a unui RegionAST, care
     numără regiunile (regiuni din puncte, dreptunghiuri și cercuri) și
     transformările elementare (translații și scalări) din cadrul unei alte
@@ -482,7 +496,11 @@ basicTransformationCount = foldTransformationAST combiner
 
     Cum ajută evaluarea leneșă dacă dorim să accesăm doar o componentă a perechii?
     
-    Răspuns: ...................
+    Răspuns: ajută dacă dorim să accesăm doar o componentă a perechii prin faptul că permite
+    calcularea doar a acelei componente fără a evalua întreaga structură
+    dacă accesăm doar prima componentă a perechii (Int, Int) returnate (numărul de regiuni elementare),
+    componenta a doua (numărul de transformări elementare) nu va fi evaluată decât dacă este necesară
+
 
     Exemple:
 
@@ -507,12 +525,34 @@ basicTransformationCount = foldTransformationAST combiner
 basicEntityCount :: RegionAST -> (Int, Int)
 basicEntityCount = foldRegionAST combiner
   where
+    -- Define the combiner function for RegionShape
     combiner :: RegionCombiner (Int, Int)
-    combiner region = undefined
+
+    -- Combiner for FromPoints: counts as 1 basic region and 0 transformations
+    combiner (FromPoints _) = (1, 0)
+
+    -- Combiner for Rectangle: counts as 1 basic region and 0 transformations
+    combiner (Rectangle _ _) = (1, 0)
+
+    -- Combiner for Circle: counts as 1 basic region and 0 transformations
+    combiner (Circle _) = (1, 0)
+
+    -- Combiner for Complement: inherits the counts from the contained region
+    combiner (Complement (regionCount, transCount)) = (regionCount, transCount)
+
+    -- Combiner for Union: sums the counts from both contained regions
+    combiner (Union (regionCount1, transCount1) (regionCount2, transCount2)) =
+        (regionCount1 + regionCount2, transCount1 + transCount2)
+
+    -- Combiner for Intersection: sums the counts from both contained regions
+    combiner (Intersection (regionCount1, transCount1) (regionCount2, transCount2)) =
+        (regionCount1 + regionCount2, transCount1 + transCount2)
+    
+    -- Combiner for Transform: adds the count of transformations to the count of the contained region
+    combiner (Transform transformation (regionCount, transCount)) =
+        (regionCount, transCount + basicTransformationCount transformation)
 
 {-
-    *** TODO ***
-
     Reimplementați funcția show pe regiuni ca o reducere a unui RegionAST,
     și apoi modificați flag-ul de mai jos la True.
 
