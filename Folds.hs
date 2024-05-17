@@ -192,26 +192,29 @@ instance Show RegionAST where
         showRegion :: Int -> RegionAST -> String
         showRegion level (R shape) = case shape of
             -- For FromPoints, Rectangle, and Circle, directly show the shape with the proper indentation
-            FromPoints points -> replicate (2 * level) ' ' ++ "FromPoints " ++ show points
-            Rectangle w h -> replicate (2 * level) ' ' ++ "Rectangle " ++ show w ++ " " ++ show h
-            Circle r -> replicate (2 * level) ' ' ++ "Circle " ++ show r
+            FromPoints points -> indent level ++ "FromPoints " ++ show points
+            Rectangle w h -> indent level ++ "Rectangle " ++ show w ++ " " ++ show h
+            Circle r -> indent level ++ "Circle " ++ show r
             -- For Complement, show the '~' character and then the indented region
             Complement region -> 
-                replicate (2 * level) ' ' ++ "~\n" ++ showRegion (level + 1) region
+                indent level ++ "~\n" ++ showRegion (level + 1) region
             -- For Union, show the '+' character and then the two indented regions
             Union region1 region2 -> 
-                replicate (2 * level) ' ' ++ "+\n" ++
+                indent level ++ "+\n" ++
                 showRegion (level + 1) region1 ++ "\n" ++
                 showRegion (level + 1) region2
             -- For Intersection, show the '*' character and then the two indented regions
             Intersection region1 region2 -> 
-                replicate (2 * level) ' ' ++ "*\n" ++
+                indent level ++ "*\n" ++
                 showRegion (level + 1) region1 ++ "\n" ++
                 showRegion (level + 1) region2
             -- For Transform, show the transformation and then the indented region
             Transform trans region -> 
-                replicate (2 * level) ' ' ++ show trans ++ "\n" ++
+                indent level ++ show trans ++ "\n" ++
                 showRegion (level + 1) region
+
+        indent :: Int -> String
+        indent level = replicate (2 * level) ' '
 
 {-
     Instanțiați clasa Num și implementați doar funcțiile de mai jos, pentru
