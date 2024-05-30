@@ -89,6 +89,8 @@ applyTransformation (Combine []) region = region
 applyTransformation transformation region = Transform transformation region
 
 {-
+    *** TODO ***
+
     Implementați funcția toTransformation, care constituie o interpretare
     a AST-ului unei transformări (TransformationAST), în vederea recuperării
     reprezentării concrete din etapa 1, sub forma unei funcții cu tipul

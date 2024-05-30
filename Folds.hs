@@ -500,7 +500,7 @@ basicTransformationCount = foldTransformationAST combiner
     Cum ajută evaluarea leneșă dacă dorim să accesăm doar o componentă a perechii?
     
     Răspuns: ajută dacă dorim să accesăm doar o componentă a perechii prin faptul că permite
-    calcularea doar a acelei componente fără a evalua întreaga structură
+    calcularea doar a acelei componente fără a evalua întreaga structură;
     dacă accesăm doar prima componentă a perechii (Int, Int) returnate (numărul de regiuni elementare),
     componenta a doua (numărul de transformări elementare) nu va fi evaluată decât dacă este necesară
 

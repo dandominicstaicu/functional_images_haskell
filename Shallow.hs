@@ -30,6 +30,8 @@ type Region = Pointed Bool
 type Transformation = Point -> Point
 
 {-
+    *** TODO ***
+
     Implementați funcția inside, care verifică dacă un punct aparține unei
     regiuni (ea însăși reprezentată ca o funcție caracteristică).
 
@@ -48,15 +50,15 @@ type Transformation = Point -> Point
 -}
 
 {-
-    inside point region = region point, so aplying the function region on the point
-    using flip ($) inverts the order of arguments for the operator ($)
+    apply the function Region on the Point
 -}
 inside :: Point -> Region -> Bool
--- inside point region = region point
-inside = flip ($)
+inside point region = region point
 
 
 {-
+    *** TODO ***
+
     Implementați funcția fromPoints, care construiește o regiune pe baza unei
     liste de puncte.
 
@@ -80,12 +82,16 @@ inside = flip ($)
 
 {-
     fromPoints ps p checks if p is an element of list ps
+    elem :: a -> [a] -> Bool
+    using flip makes it [a] -> a -> Bool
 -}
 fromPoints :: [Point] -> Region
 -- fromPoints ps = \p -> p `elem` ps
 fromPoints = flip elem
 
 {-
+    *** TODO ***
+
     Implementați funcția rectangle, care generează o regiune aferentă
     unui dreptunghi, cu lățime și înălțime date, simetric față de originea
     (0, 0). De exemplu, un dreptunghi cu lățimea 2 și înălțimea 2 va avea
@@ -113,6 +119,8 @@ rectangle :: Float -> Float -> Region
 rectangle width height (x, y) = abs x <= width / 2 && abs y <= height / 2
 
 {-
+    *** TODO ***
+
     Implementați funcția circle, care generează o regiune aferentă unui cerc,
     cu rază dată și centrul în originea (0, 0).
 
@@ -139,6 +147,8 @@ circle :: Float -> Region
 circle radius (x, y) = x ** 2 + y ** 2 <= radius ** 2
 
 {-
+    *** TODO ***
+
     Implementați funcția plot, care generează diagrama unei regiuni,
     pe o suprafață de desenare de dimensiuni fixate. Punctul (0, 0)
     se află în centrul suprafeței de desenare, iar lățimea și înălțimea
@@ -185,8 +195,10 @@ circle radius (x, y) = x ** 2 + y ** 2 <= radius ** 2
 -}
 plot :: Int -> Int -> Region -> String
 plot width height region =  intercalate "\n" [
+    -- If the point (x, y) is in the given region, add '*' at the line, esle add '.'
     [if region (fromIntegral x, fromIntegral y) then '*' else '.'
-    | x <- [-width..width]] | y <- [height, height-1.. -height]
+    | x <- [-width..width]] -- List comprehension for x
+    | y <- [height, height-1.. -height] -- List comprehension for y descending coords
     ]
 
 {-
@@ -197,6 +209,8 @@ printPlot :: Int -> Int -> Region -> IO ()
 printPlot width height region = putStrLn $ plot width height region
 
 {-
+    *** TODO ***
+
     Implementați funcțiile promoteUnary și promoteBinary, care primesc
     o funcție unară (a -> b), respectiv binară (a -> b -> c), și o promovează
     pentru a opera pe rezultatul(-ele) unor funcții (Point -> a) etc.
@@ -217,13 +231,24 @@ printPlot width height region = putStrLn $ plot width height region
     > promoteBinary (+) (\(x, _) -> x) (\(_, y) -> y) (3, 2)
     5.0
 -}
+{-
+    Apply g on a function and than apply f on the result;
+    point-free, without mentioning the parameters
+-}
 promoteUnary :: (a -> b) -> Pointed a -> Pointed b
 promoteUnary f g = f . g
 
+{-
+    `pointed1 point` applies function `pointed1` on a `point`,returning an `a`
+    `pointed2 point` applies function `pointed2` on a `point`,returning a `b`
+    f applies a binary function on the results
+-}
 promoteBinary :: (a -> b -> c) -> Pointed a -> Pointed b -> Pointed c
 promoteBinary f pointed1 pointed2 point = f (pointed1 point) (pointed2 point)
 
 {-
+    *** TODO ***
+
     Implementați funcțiile complement, union și intersection, care determină
     complementul, reuniunea, respectiv intersecția a două regiuni.
 
@@ -253,16 +278,25 @@ promoteBinary f pointed1 pointed2 point = f (pointed1 point) (pointed2 point)
     .....
     .....
 -}
+
+-- `promoteUnary not` takes a `Region` function (of type `Point -> Bool`) and returns a new `Region` function
+-- which applies `not' to the result of the original function.
 complement :: Region -> Region
 complement = promoteUnary not
 
+-- `promoteBinary (||)` takes two `Region` functions and returns a new `Region` function
+-- which applies `(||)` to the results of the original functions.
 union :: Region -> Region -> Region
 union = promoteBinary (||)
 
+-- `promoteBinary (&&)` takes two `Region` functions and returns a new `Region` function
+-- which applies `(&&)` to the results of the original functions.
 intersection :: Region -> Region -> Region
 intersection = promoteBinary (&&)
 
 {-
+    *** TODO ***
+
     Implementați funcția translation, care generează o translație
     cu deplasamente primite ca parametri. Deși contraintuitiv, deplasamentele
     trebuie scăzute, nu adunate, din coordonatele punctului transformat.
@@ -281,6 +315,8 @@ translation :: Float -> Float -> Transformation
 translation tx ty = \(x, y) -> (x - tx, y - ty)
 
 {-
+    *** TODO ***
+
     Implementați funcția scaling, care generează o scalare cu un factor primit
     ca parametru. Similar cu observația de la funcția translate, factorul
     contribuie prin împărțire, nu prin înmulțire.
@@ -294,6 +330,7 @@ scaling :: Float -> Transformation
 scaling factor = \(x, y) -> (x / factor, y / factor)
 
 {-
+    *** TODO ***
     Implementați funcția applyTransformation, care aplică o transformare asupra
     unei regiuni.
 
@@ -315,6 +352,7 @@ scaling factor = \(x, y) -> (x / factor, y / factor)
     ..*..
     .....
 -}
+-- make a new region from the given transformation
 applyTransformation :: Transformation -> Region -> Region
 applyTransformation transformation region = region . transformation
 
